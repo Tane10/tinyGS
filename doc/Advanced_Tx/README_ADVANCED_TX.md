@@ -100,4 +100,11 @@ The operator simply enters the following into the dashboard to ensure no ASCII c
 
 ---
 
+## 7. Links
+
+[Github issue](https://github.com/G4lile0/tinyGS/issues/304)
+[JS Fiddle](https://jsfiddle.net/8m6Lr3y1/11/)
+
+---
+
 [^1]: 4.1.3 PACKET PRIMARY HEADER, RECOMMENDED STANDARD CCSDS 133.0-B-2 BLUE BOOK June 2020 [Reference](https://ccsds.org/Pubs/133x0b2e2.pdf)
