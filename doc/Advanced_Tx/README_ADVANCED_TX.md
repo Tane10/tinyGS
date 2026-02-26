@@ -100,6 +100,4 @@ The operator simply enters the following into the dashboard to ensure no ASCII c
 
 ---
 
-[^1]:
-
-4.1.3 PACKET PRIMARY HEADER, RECOMMENDED STANDARD CCSDS 133.0-B-2 BLUE BOOK June 2020 [Reference](https://ccsds.org/Pubs/133x0b2e2.pdf)
+[^1]: 4.1.3 PACKET PRIMARY HEADER, RECOMMENDED STANDARD CCSDS 133.0-B-2 BLUE BOOK June 2020 [Reference](https://ccsds.org/Pubs/133x0b2e2.pdf)
