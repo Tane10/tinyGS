@@ -103,6 +103,31 @@
             color: #666;
             font-weight: normal;
         }
+
+        .status-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+            text-align: left;
+        }
+
+        .status-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #eee;
+            font-size: 0.95em;
+        }
+
+        .status-label {
+            font-weight: bold;
+            color: #444;
+        }
+
+        .status-value {
+            font-family: monospace;
+            color: #007bff;
+        }
     </style>
 </head>
 
@@ -112,16 +137,20 @@
 
     <div class="card">
         <strong>Station Status</strong>
-        <table id="gsstatus">
-            <tr>
-                <td>Mode</td>
-                <td>LoRa</td>
-            </tr>
-            <tr>
-                <td>Uptime</td>
-                <td>00:42:15</td>
-            </tr>
-        </table>
+        <ul id="gsstatus" class="status-list">
+            <li>
+                <span class="status-label">Frequency:</span>
+                <span id="stat-freq" class="status-value">433.000 MHz</span>
+            </li>
+            <li>
+                <span class="status-label">Mode:</span>
+                <span id="stat-mode" class="status-value">LoRa</span>
+            </li>
+            <li>
+                <span class="status-label">Uptime:</span>
+                <span id="stat-uptime" class="status-value">00:42:15</span>
+            </li>
+        </ul>
     </div>
 
     <div class="card" style="min-width: 400px; max-width: 500px;">
@@ -346,7 +375,7 @@
             const isLocal = window.location.protocol === 'file:' ||
                 window.location.hostname === 'localhost' ||
                 window.location.hostname === '127.0.0.1';
-            const isPlayground = window.location.hostname.includes('jsfiddle') ||
+            const isPlayground = window.location.hostname.includes('fiddle') ||
                 window.location.hostname.includes('cdpn.io') ||
                 window.location.hostname.includes('codepen');
 
