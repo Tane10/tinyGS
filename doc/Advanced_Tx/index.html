@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TinyGS - Advanced Hex Transmit</title>
+    <style>
+        /* Reusing styles from IOTWEBCONF_DASHBOARD_STYLE_INNER in html.h */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        h3 {
+            text-align: center;
+        }
+
+        .card {
+            margin: 10px;
+            text-align: left;
+            font-family: Arial;
+            border: 3px groove;
+            border-radius: 0.3rem;
+            display: inline-block;
+            padding: 15px;
+            min-width: 300px;
+            background: #fff;
+            vertical-align: top;
+        }
+
+        td {
+            padding: 0 10px;
+        }
+
+        .G {
+            color: green;
+            font-weight: bold;
+        }
+
+        .R {
+            color: red;
+            font-weight: bold;
+        }
+
+        /* Specific styles for the Advanced Hex Tool */
+        .tx-input {
+            width: 100%;
+            font-family: monospace;
+            padding: 8px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            text-transform: uppercase;
+        }
+
+        .legal-box {
+            font-size: 0.85em;
+            background: #fff3cd;
+            padding: 10px;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .btn-send {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-send:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .timer-display {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        select {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+
+        .byte-counter {
+            float: right;
+            font-size: 0.9em;
+            color: #666;
+            font-weight: normal;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>TinyGS Advanced Dashboard</h2>
+
+    <div class="card">
+        <strong>Station Status</strong>
+        <table id="gsstatus">
+            <tr>
+                <td>Mode</td>
+                <td>LoRa</td>
+            </tr>
+            <tr>
+                <td>Uptime</td>
+                <td>00:42:15</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card" style="min-width: 400px; max-width: 500px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong>Transaction Log (Local)</strong>
+            <button onclick="exportTxLog()"
+                style="font-size: 0.8em; padding: 3px 8px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 3px;">Export
+                JSON</button>
+        </div>
+        <div
+            style="max-height: 120px; overflow-y: auto; margin-top: 10px; font-size: 0.85em; border-top: 1px solid #ddd; padding-top: 5px;">
+            <table style="width: 100%; margin: 0; text-align: left;">
+                <thead>
+                    <tr style="color: #666;">
+                        <th style="padding-bottom: 5px;">Timestamp (ISO)</th>
+                        <th style="padding-bottom: 5px;">Payload (Hex)</th>
+                    </tr>
+                </thead>
+                <tbody id="txLogBody">
+                    <tr>
+                        <td colspan="2" style="text-align: center; color: #999;">No local logs found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="t1" style="height:50px;"></div>
+
+    <br>
+
+    <div class="card" id="tx-card">
+        <strong>Advanced Hex Transmit (Phase 1)</strong>
+        <hr>
+        <div
+            style="background: #eef2f7; padding: 10px; border-radius: 4px; margin-bottom: 15px; border-left: 4px solid #007bff;">
+            <label style="font-weight:bold; font-size:0.85em;">Callsign-to-Hex Converter:</label>
+            <div style="display:flex; gap:5px; margin-top:5px;">
+                <input type="text" id="csInput" placeholder="e.g. M0XYZ"
+                    style="flex:1; padding:5px; text-transform:uppercase;">
+                <button onclick="convertCallsign()" style="padding:5px; cursor:pointer;">Convert</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                <div id="csOutput" style="font-family:monospace; font-size:0.85em; color:#555; word-break:break-all;">
+                    Hex: (Waiting)</div>
+                <button id="csAppendBtn" onclick="appendCallsign()"
+                    style="display:none; padding:3px 8px; font-size:0.8em; cursor:pointer; background-color:#28a745; color:white; border:none; border-radius:3px;">+
+                    Append</button>
+            </div>
+        </div>
+
+        <label for="template">Template Injection:</label>
+        <select id="template" onchange="injectTemplate()">
+            <option value="">-- None (Custom) --</option>
+            <option value="01A5C0010007">CCSDS TM Header (APID 421, Seq 1)</option>
+            <option value="48454c4c4f">ASCII "HELLO" (48454C4C4F)</option>
+        </select>
+
+        <label for="hexInput" style="display:block;">Hex Payload: <span id="byteCount" class="byte-counter">0 / 255
+                bytes</span></label>
+        <input type="text" id="hexInput" class="tx-input" placeholder="e.g. 1D01C02A0001DEAD" oninput="validateHex()">
+
+        <div id="validationMsg" style="font-size: 0.8em; margin-bottom: 10px; min-height: 1.2em;"></div>
+
+        <hr>
+
+        <div class="legal-box">
+            <input type="checkbox" id="legalCheck" onclick="validateHex()">
+            <label for="legalCheck">I confirm I am operating within my license, power limits (e.g. 14dBm UK), and local
+                regulations.</label>
+        </div>
+
+        <button id="sendBtn" class="btn-send" disabled onclick="handleTransmit()">Transmit Raw Bytes</button>
+        <div id="txStatus" style="margin-top:10px; font-size: 0.9em; text-align:center;"></div>
+    </div>
+
+    <script>
+        let currentCallsignHex = "";
+
+        function injectTemplate() {
+            const template = document.getElementById('template').value;
+            if (template) {
+                document.getElementById('hexInput').value = template;
+                validateHex();
+            }
+        }
+        // --- LOGGING UTILITIES ---
+        const LOG_KEY = "tinygs_tx_history";
+        const MAX_LOGS = 100; // Keep the last 100 TXs to prevent unlimited growth
+
+        function loadTxLogs() {
+            try {
+                const logs = localStorage.getItem(LOG_KEY);
+                return logs ? JSON.parse(logs) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveTxLog(hexPayload) {
+            let logs = loadTxLogs();
+            const entry = {
+                timestamp: new Date().toISOString(),
+                payload: hexPayload
+            };
+            logs.unshift(entry); // Add to the beginning of the array
+
+            if (logs.length > MAX_LOGS) {
+                logs.pop(); // Remove oldest to stay within limit
+            }
+
+            localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+            renderTxLog();
+        }
+
+        function renderTxLog() {
+            const logs = loadTxLogs();
+            const tbody = document.getElementById('txLogBody');
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #999;">No local logs found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+
+                // Format Timestamp (Show just time & date for space, hover for full ISO)
+                const tdTime = document.createElement('td');
+                const d = new Date(log.timestamp);
+                tdTime.innerText = d.toISOString().replace('T', ' ').substring(0, 19);
+                tdTime.title = log.timestamp;
+                tdTime.style.paddingRight = "10px";
+
+                // Format Payload (Truncate to 36 chars)
+                const tdPayload = document.createElement('td');
+                tdPayload.style.fontFamily = "monospace";
+                if (log.payload.length > 36) {
+                    tdPayload.innerText = log.payload.substring(0, 36) + "...";
+                    tdPayload.title = log.payload; // Show full hex on hover
+                } else {
+                    tdPayload.innerText = log.payload;
+                }
+
+                tr.appendChild(tdTime);
+                tr.appendChild(tdPayload);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportTxLog() {
+            const logs = localStorage.getItem(LOG_KEY);
+            if (!logs || logs === "[]") {
+                alert("Log is empty. Nothing to export.");
+                return;
+            }
+
+            // Copy raw JSON string to clipboard
+            navigator.clipboard.writeText(logs).then(() => {
+                alert("Audit Log (JSON) copied to clipboard!");
+            }).catch(err => {
+                alert("Failed to copy. See console.");
+                console.error("Export Error: ", err);
+            });
+        }
+
+        // Call this once when the page loads to display historical data
+        window.addEventListener('load', renderTxLog);
+
+        function validateHex() {
+            let inputField = document.getElementById('hexInput');
+
+            // Auto-Sanitization: strips 0x, spaces, and commas
+            let sanitized = inputField.value.replace(/0x/gi, '').replace(/[\s,]/g, '');
+            if (inputField.value !== sanitized) {
+                inputField.value = sanitized;
+            }
+
+            let input = sanitized;
+            const isLegal = document.getElementById('legalCheck').checked;
+            const msg = document.getElementById('validationMsg');
+            const btn = document.getElementById('sendBtn');
+            const byteCountDisplay = document.getElementById('byteCount');
+
+            const isHex = /^[0-9A-Fa-f]*$/.test(input);
+            const isEven = input.length % 2 === 0;
+            const isNotTooLong = input.length <= 510; // 255 bytes limit
+            const byteLen = Math.floor(input.length / 2);
+
+            // Update Counter
+            byteCountDisplay.innerText = byteLen + " / 255 bytes";
+            if (!isNotTooLong) { byteCountDisplay.style.color = 'red'; } else { byteCountDisplay.style.color = '#666'; }
+
+            if (input.length === 0) {
+                msg.innerHTML = "";
+                btn.disabled = true;
+            } else if (!isHex) {
+                msg.innerHTML = "<span class='R'>Error: Invalid hex characters</span>";
+                btn.disabled = true;
+            } else if (!isEven) {
+                msg.innerHTML = "<span class='R'>Error: Odd number of nibbles</span>";
+                btn.disabled = true;
+            } else if (!isNotTooLong) {
+                msg.innerHTML = "<span class='R'>Error: Exceeds 255 bytes</span>";
+                btn.disabled = true;
+            } else {
+                msg.innerHTML = "<span class='G'>Valid Binary Payload</span>";
+                btn.disabled = !isLegal;
+            }
+        }
+
+        function handleTransmit() {
+            const payload = document.getElementById('hexInput').value;
+            const status = document.getElementById('txStatus');
+            const btn = document.getElementById('sendBtn');
+
+            status.innerHTML = "Processing uplink...";
+            btn.disabled = true;
+
+            // MOCK MODE DETECTION: Check if we are running locally (file:// or Live Server localhost)
+            const isLocalFile = window.location.protocol === 'file:';
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+            // MOCK MODE DETECTION: Check if we are running locally (file://)
+            if (isLocalFile || isLocalhost) {
+                console.log("[MOCK MODE] Simulating ESP32 Backend for: ", payload);
+
+                // Simulate 800ms radio processing delay
+                setTimeout(() => {
+                    status.innerHTML = "<span class='G'>Success (Mocked)!</span> <a href='#t1' style='color:#007bff; text-decoration:underline;'>Monitor Console for replies</a>";
+                    saveTxLog(payload); // Trigger the local storage audit log
+                    validateHex();      // Re-evaluate form state
+                }, 800);
+
+                return; // Exit early, do not attempt fetch
+            }
+
+            fetch('/tx-handler', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'payload=' + encodeURIComponent(payload)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        // Clearer Radio State Feedback guiding user back to standard console workflow
+                        status.innerHTML = "<span class='G'>Success!</span> <a href='#t1' style='color:#007bff; text-decoration:underline;'>Monitor Console for replies</a>";
+                        saveTxLog(payload);
+                    } else {
+                        status.innerHTML = "<span class='R'>Error: Radio busy or invalid request</span>";
+                    }
+                })
+                .catch(err => {
+                    status.innerHTML = "<span class='R'>Error: Connection failed</span>";
+                })
+                .finally(() => {
+                    // Re-enable if still valid
+                    validateHex();
+                });
+        }
+
+        function convertCallsign() {
+            const cs = document.getElementById('csInput').value.trim();
+            const output = document.getElementById('csOutput');
+            const appendBtn = document.getElementById('csAppendBtn');
+
+            if (cs.length === 0) {
+                appendBtn.style.display = 'none';
+                return;
+            }
+
+            let hex = "";
+            for (let i = 0; i < cs.length; i++) {
+                hex += cs.charCodeAt(i).toString(16).toUpperCase();
+            }
+            currentCallsignHex = hex;
+            output.innerHTML = "Hex: <strong>" + hex + "</strong>";
+            appendBtn.style.display = 'inline-block'; // Show shortcut button
+        }
+
+        function appendCallsign() {
+            const hexIn = document.getElementById('hexInput');
+            hexIn.value += currentCallsignHex;
+            validateHex();
+        }
+    </script>
+</body>
+
+</html>
