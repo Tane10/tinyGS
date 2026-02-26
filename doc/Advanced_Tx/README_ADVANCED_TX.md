@@ -1,7 +1,3 @@
-This is the final, comprehensive documentation for the **Advanced Hex Transmit** feature. It has been structured to separate the immediate implementation (Phase 1) from the long-term roadmap (Phase 2) to ensure a smooth, professional review by the TinyGS maintainers.
-
----
-
 # Feature: Advanced Hex Transmit Tool
 
 ## 1. Overview
